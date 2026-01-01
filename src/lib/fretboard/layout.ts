@@ -50,7 +50,8 @@ export function getFretXPositions(
   for (let fret = startFret; fret <= endFret; fret++) {
     const fretPos = calculateFretPosition(fret, scaleLength);
     const normalizedPos = (fretPos - startPos) / range;
-    positions.push(normalizedPos * availableWidth);
+    // Round to 2 decimal places to avoid SSR/CSR hydration mismatch
+    positions.push(Math.round(normalizedPos * availableWidth * 100) / 100);
   }
 
   return positions;
@@ -216,5 +217,6 @@ export function getNoteCenterX(
     return null;
   }
 
-  return paddingLeft + (prevFretX + currentFretX) / 2;
+  // Round to 2 decimal places to avoid SSR/CSR hydration mismatch
+  return Math.round((paddingLeft + (prevFretX + currentFretX) / 2) * 100) / 100;
 }
