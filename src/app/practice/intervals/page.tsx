@@ -62,23 +62,28 @@ export default function IntervalsPage() {
 
   const availableIntervals = DIFFICULTY_INTERVALS[difficulty];
 
+  // Filter notes to only those visible on the fretboard (frets 0-12)
+  const visibleNotes = useMemo(() => {
+    return notes.filter(note => note.fret >= 0 && note.fret <= 12);
+  }, [notes]);
+
   // Generate a new question
   const generateQuestion = useCallback(() => {
-    if (notes.length < 2) return;
+    if (visibleNotes.length < 2) return;
 
-    // Pick a random root note from the scale
-    const rootIndex = Math.floor(Math.random() * notes.length);
-    const rootNote = notes[rootIndex];
+    // Pick a random root note from visible scale notes
+    const rootIndex = Math.floor(Math.random() * visibleNotes.length);
+    const rootNote = visibleNotes[rootIndex];
 
-    // Filter notes that create an interval we're testing
-    const validTargets = notes.filter((note) => {
+    // Filter visible notes that create an interval we're testing
+    const validTargets = visibleNotes.filter((note) => {
       const interval = getIntervalBetweenNotes(rootNote, note);
       return interval !== null && availableIntervals.includes(interval) && note !== rootNote;
     });
 
     if (validTargets.length === 0) {
-      // Fallback: just pick any other note
-      const otherNotes = notes.filter((n) => n !== rootNote);
+      // Fallback: just pick any other visible note
+      const otherNotes = visibleNotes.filter((n) => n !== rootNote);
       if (otherNotes.length === 0) return;
 
       const targetNote = otherNotes[Math.floor(Math.random() * otherNotes.length)];
@@ -106,7 +111,7 @@ export default function IntervalsPage() {
       isCorrect: null,
       showAnswer: false,
     });
-  }, [notes, availableIntervals]);
+  }, [visibleNotes, availableIntervals]);
 
   // Calculate interval between two notes
   function getIntervalBetweenNotes(note1: FretboardNote, note2: FretboardNote): number | null {
@@ -140,7 +145,7 @@ export default function IntervalsPage() {
 
   // Create display notes for fretboard
   const displayNotes = useMemo((): FretboardNote[] => {
-    if (!quiz.rootNote || !quiz.targetNote) return notes;
+    if (!quiz.rootNote || !quiz.targetNote) return visibleNotes;
 
     return [
       { ...quiz.rootNote, isRoot: true, isHighlighted: true },
@@ -151,14 +156,14 @@ export default function IntervalsPage() {
         intervalName: quiz.showAnswer ? INTERVAL_BUTTONS.find(b => b.semitones === quiz.correctInterval)?.label : '?',
       },
     ];
-  }, [quiz, notes]);
+  }, [quiz, visibleNotes]);
 
   // Initialize first question
   useEffect(() => {
-    if (notes.length > 0 && !quiz.rootNote) {
+    if (visibleNotes.length > 0 && !quiz.rootNote) {
       generateQuestion();
     }
-  }, [notes, quiz.rootNote, generateQuestion]);
+  }, [visibleNotes, quiz.rootNote, generateQuestion]);
 
   // Options
   const rootOptions = NOTE_NAMES.map((note) => ({
