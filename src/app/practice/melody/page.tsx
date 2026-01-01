@@ -71,9 +71,6 @@ export default function MelodyPage() {
     const startIndex = Math.floor(Math.random() * notePool.length);
     let currentNote = notePool[startIndex];
 
-    // Safety check (shouldn't happen but defensive)
-    if (!currentNote) return;
-
     for (let i = 0; i < settings.noteCount; i++) {
       // Add sequence number to note
       const melodyNote: FretboardNote = {
@@ -118,18 +115,15 @@ export default function MelodyPage() {
         if (descending.length > 0) candidates = descending;
       }
 
-      // Pick random from candidates with proper bounds checking
+      // Pick random from candidates
       if (candidates.length > 0) {
         const nextIndex = Math.floor(Math.random() * candidates.length);
-        const nextNote = candidates[nextIndex];
-        if (nextNote) currentNote = nextNote;
-      } else if (notePool.length > 0) {
+        currentNote = candidates[nextIndex];
+      } else {
         // Fallback to any note from pool
         const fallbackIndex = Math.floor(Math.random() * notePool.length);
-        const fallbackNote = notePool[fallbackIndex];
-        if (fallbackNote) currentNote = fallbackNote;
+        currentNote = notePool[fallbackIndex];
       }
-      // If both fail, currentNote stays the same (repeat note)
     }
 
     setMelodyNotes(melody);
