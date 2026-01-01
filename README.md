@@ -43,7 +43,7 @@ src/
 
 | Category | Scales |
 |----------|--------|
-| Pentatonic | Major & Minor Pentatonic |
+| Pentatonic | Major Pentatonic, Minor Pentatonic |
 | Blues | Blues, Major Blues |
 | Modes | Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian |
 | Harmonic | Harmonic Minor, Phrygian Dominant |
