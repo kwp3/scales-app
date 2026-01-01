@@ -42,6 +42,20 @@ const INTERVAL_BUTTONS = [
   { semitones: 11, label: '7' },
 ];
 
+const VISIBLE_START_FRET = 0;
+const VISIBLE_END_FRET = 12;
+
+// Calculate interval between two notes (pure function, outside component for performance)
+function getIntervalBetweenNotes(note1: FretboardNote, note2: FretboardNote): number | null {
+  const noteOrder = NOTE_NAMES;
+  const index1 = noteOrder.indexOf(note1.note);
+  const index2 = noteOrder.indexOf(note2.note);
+
+  if (index1 === -1 || index2 === -1) return null;
+
+  return ((index2 - index1) + 12) % 12;
+}
+
 export default function IntervalsPage() {
   const { tuning, displayOptions, availableTunings, setTuningId } = useFretboard();
   const { root, setRoot, scale, scaleId, setScaleId, notes } = useScale({ tuning });
@@ -62,23 +76,28 @@ export default function IntervalsPage() {
 
   const availableIntervals = DIFFICULTY_INTERVALS[difficulty];
 
+  // Filter notes to only those visible on the fretboard
+  const visibleNotes = useMemo(() => {
+    return notes.filter(note => note.fret >= VISIBLE_START_FRET && note.fret <= VISIBLE_END_FRET);
+  }, [notes]);
+
   // Generate a new question
   const generateQuestion = useCallback(() => {
-    if (notes.length < 2) return;
+    if (visibleNotes.length < 2) return;
 
-    // Pick a random root note from the scale
-    const rootIndex = Math.floor(Math.random() * notes.length);
-    const rootNote = notes[rootIndex];
+    // Pick a random root note from visible scale notes
+    const rootIndex = Math.floor(Math.random() * visibleNotes.length);
+    const rootNote = visibleNotes[rootIndex];
 
-    // Filter notes that create an interval we're testing
-    const validTargets = notes.filter((note) => {
+    // Filter visible notes that create an interval we're testing
+    const validTargets = visibleNotes.filter((note) => {
       const interval = getIntervalBetweenNotes(rootNote, note);
       return interval !== null && availableIntervals.includes(interval) && note !== rootNote;
     });
 
     if (validTargets.length === 0) {
-      // Fallback: just pick any other note
-      const otherNotes = notes.filter((n) => n !== rootNote);
+      // Fallback: just pick any other visible note
+      const otherNotes = visibleNotes.filter((n) => n !== rootNote);
       if (otherNotes.length === 0) return;
 
       const targetNote = otherNotes[Math.floor(Math.random() * otherNotes.length)];
@@ -106,18 +125,7 @@ export default function IntervalsPage() {
       isCorrect: null,
       showAnswer: false,
     });
-  }, [notes, availableIntervals]);
-
-  // Calculate interval between two notes
-  function getIntervalBetweenNotes(note1: FretboardNote, note2: FretboardNote): number | null {
-    const noteOrder = NOTE_NAMES;
-    const index1 = noteOrder.indexOf(note1.note);
-    const index2 = noteOrder.indexOf(note2.note);
-
-    if (index1 === -1 || index2 === -1) return null;
-
-    return ((index2 - index1) + 12) % 12;
-  }
+  }, [visibleNotes, availableIntervals]);
 
   // Handle answer submission
   const handleAnswer = useCallback((interval: number) => {
@@ -140,7 +148,7 @@ export default function IntervalsPage() {
 
   // Create display notes for fretboard
   const displayNotes = useMemo((): FretboardNote[] => {
-    if (!quiz.rootNote || !quiz.targetNote) return notes;
+    if (!quiz.rootNote || !quiz.targetNote) return visibleNotes;
 
     return [
       { ...quiz.rootNote, isRoot: true, isHighlighted: true },
@@ -151,14 +159,14 @@ export default function IntervalsPage() {
         intervalName: quiz.showAnswer ? INTERVAL_BUTTONS.find(b => b.semitones === quiz.correctInterval)?.label : '?',
       },
     ];
-  }, [quiz, notes]);
+  }, [quiz, visibleNotes]);
 
   // Initialize first question
   useEffect(() => {
-    if (notes.length > 0 && !quiz.rootNote) {
+    if (visibleNotes.length > 0 && !quiz.rootNote) {
       generateQuestion();
     }
-  }, [notes, quiz.rootNote, generateQuestion]);
+  }, [visibleNotes, quiz.rootNote, generateQuestion]);
 
   // Options
   const rootOptions = NOTE_NAMES.map((note) => ({
@@ -286,8 +294,8 @@ export default function IntervalsPage() {
           <CardContent>
             <Fretboard
               tuning={tuning}
-              startFret={0}
-              endFret={12}
+              startFret={VISIBLE_START_FRET}
+              endFret={VISIBLE_END_FRET}
               notes={displayNotes}
               displayOptions={{
                 ...displayOptions,
