@@ -138,8 +138,8 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
       }
       // Close AudioContext to free resources
       if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {
-          // Ignore errors when closing
+        audioContextRef.current.close().catch((error) => {
+          console.warn('Error closing AudioContext:', error);
         });
         audioContextRef.current = null;
       }
