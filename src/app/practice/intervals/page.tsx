@@ -42,6 +42,20 @@ const INTERVAL_BUTTONS = [
   { semitones: 11, label: '7' },
 ];
 
+const VISIBLE_START_FRET = 0;
+const VISIBLE_END_FRET = 12;
+
+// Calculate interval between two notes (pure function, outside component for performance)
+function getIntervalBetweenNotes(note1: FretboardNote, note2: FretboardNote): number | null {
+  const noteOrder = NOTE_NAMES;
+  const index1 = noteOrder.indexOf(note1.note);
+  const index2 = noteOrder.indexOf(note2.note);
+
+  if (index1 === -1 || index2 === -1) return null;
+
+  return ((index2 - index1) + 12) % 12;
+}
+
 export default function IntervalsPage() {
   const { tuning, displayOptions, availableTunings, setTuningId } = useFretboard();
   const { root, setRoot, scale, scaleId, setScaleId, notes } = useScale({ tuning });
@@ -62,9 +76,9 @@ export default function IntervalsPage() {
 
   const availableIntervals = DIFFICULTY_INTERVALS[difficulty];
 
-  // Filter notes to only those visible on the fretboard (frets 0-12)
+  // Filter notes to only those visible on the fretboard
   const visibleNotes = useMemo(() => {
-    return notes.filter(note => note.fret >= 0 && note.fret <= 12);
+    return notes.filter(note => note.fret >= VISIBLE_START_FRET && note.fret <= VISIBLE_END_FRET);
   }, [notes]);
 
   // Generate a new question
@@ -112,17 +126,6 @@ export default function IntervalsPage() {
       showAnswer: false,
     });
   }, [visibleNotes, availableIntervals]);
-
-  // Calculate interval between two notes
-  function getIntervalBetweenNotes(note1: FretboardNote, note2: FretboardNote): number | null {
-    const noteOrder = NOTE_NAMES;
-    const index1 = noteOrder.indexOf(note1.note);
-    const index2 = noteOrder.indexOf(note2.note);
-
-    if (index1 === -1 || index2 === -1) return null;
-
-    return ((index2 - index1) + 12) % 12;
-  }
 
   // Handle answer submission
   const handleAnswer = useCallback((interval: number) => {
@@ -291,8 +294,8 @@ export default function IntervalsPage() {
           <CardContent>
             <Fretboard
               tuning={tuning}
-              startFret={0}
-              endFret={12}
+              startFret={VISIBLE_START_FRET}
+              endFret={VISIBLE_END_FRET}
               notes={displayNotes}
               displayOptions={{
                 ...displayOptions,
