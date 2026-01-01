@@ -31,10 +31,24 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const nextNoteTimeRef = useRef(0);
 
-  // Initialize audio context
+  // Initialize audio context with error handling
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      try {
+        // Check for AudioContext support
+        const AudioContextClass = window.AudioContext ||
+          (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+        if (!AudioContextClass) {
+          console.warn('AudioContext not supported in this browser');
+          return null;
+        }
+
+        audioContextRef.current = new AudioContextClass();
+      } catch (error) {
+        console.error('Failed to initialize AudioContext:', error);
+        return null;
+      }
     }
     return audioContextRef.current;
   }, []);
@@ -42,6 +56,7 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
   // Play a click sound
   const playClick = useCallback((isAccent: boolean) => {
     const audioContext = getAudioContext();
+    if (!audioContext) return;
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -65,6 +80,8 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
   // Scheduler function
   const scheduler = useCallback(() => {
     const audioContext = getAudioContext();
+    if (!audioContext) return;
+
     const secondsPerBeat = 60.0 / bpm;
 
     while (nextNoteTimeRef.current < audioContext.currentTime + 0.1) {
@@ -83,6 +100,8 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
     if (isPlaying) return;
 
     const audioContext = getAudioContext();
+    if (!audioContext) return;
+
     if (audioContext.state === 'suspended') {
       audioContext.resume();
     }
@@ -116,6 +135,13 @@ export function useMetronome(options: UseMetronomeOptions = {}): UseMetronomeRet
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      // Close AudioContext to free resources
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {
+          // Ignore errors when closing
+        });
+        audioContextRef.current = null;
       }
     };
   }, []);

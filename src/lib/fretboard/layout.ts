@@ -181,20 +181,40 @@ export function getFretMarkers(startFret: number, endFret: number) {
 
 /**
  * Calculate center X position between two frets for note placement
+ * Returns null if the note is outside the visible fret range
  */
 export function getNoteCenterX(
   fret: number,
   fretPositions: number[],
   startFret: number,
+  endFret: number,
   paddingLeft: number
-): number {
+): number | null {
+  // Check if note is outside visible range
+  if (fret < startFret || fret > endFret) {
+    return null;
+  }
+
   const fretIndex = fret - startFret;
-  if (fret === 0) {
-    // Open string note - position before nut
+
+  // Open string note when viewing from fret 0
+  if (fret === 0 && startFret === 0) {
     return paddingLeft - 20;
   }
+
+  // Validate array bounds
+  if (fretIndex < 0 || fretIndex >= fretPositions.length) {
+    return null;
+  }
+
   // Center between this fret and the previous one
   const currentFretX = fretPositions[fretIndex];
-  const prevFretX = fretPositions[fretIndex - 1] || 0;
+  const prevFretX = fretIndex > 0 ? fretPositions[fretIndex - 1] : 0;
+
+  // Guard against NaN
+  if (typeof currentFretX !== 'number' || isNaN(currentFretX)) {
+    return null;
+  }
+
   return paddingLeft + (prevFretX + currentFretX) / 2;
 }

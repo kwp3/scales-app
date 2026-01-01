@@ -93,6 +93,10 @@ export function Fretboard({
       {/* Fret markers (dots) */}
       {options.showFretMarkers && fretMarkers.map(({ fret, isDouble }) => {
         const fretIndex = fret - startFret;
+
+        // Validate array bounds
+        if (fretIndex < 0 || fretIndex >= fretPositions.length) return null;
+
         const prevFretX = fretIndex > 0 ? fretPositions[fretIndex - 1] : 0;
         const currentFretX = fretPositions[fretIndex];
         const centerX = dimensions.fretboardPadding.left + (prevFretX + currentFretX) / 2;
@@ -168,7 +172,11 @@ export function Fretboard({
 
       {/* Notes */}
       {notes.map((note, index) => {
-        const x = getNoteCenterX(note.fret, fretPositions, startFret, dimensions.fretboardPadding.left);
+        const x = getNoteCenterX(note.fret, fretPositions, startFret, endFret, dimensions.fretboardPadding.left);
+
+        // Skip notes outside visible range or with invalid coordinates
+        if (x === null) return null;
+
         const y = getStringYPosition(note.string, dimensions);
         const isRoot = note.isRoot && options.highlightRoot;
 
