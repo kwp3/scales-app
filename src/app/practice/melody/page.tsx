@@ -52,16 +52,27 @@ export default function MelodyPage() {
     );
   }, [notes, settings.stayInPosition, settings.positionFret]);
 
+  // Track if no notes available for user feedback
+  const [noNotesWarning, setNoNotesWarning] = useState(false);
+
   // Generate melody
   const generateMelody = useCallback(() => {
-    if (availableNotesForMelody.length === 0) return;
+    // Check if we have notes to work with
+    if (availableNotesForMelody.length === 0) {
+      setNoNotesWarning(true);
+      return;
+    }
 
+    setNoNotesWarning(false);
     const melody: FretboardNote[] = [];
     const notePool = [...availableNotesForMelody];
 
-    // Start with a random note
-    let currentIndex = Math.floor(Math.random() * notePool.length);
-    let currentNote = notePool[currentIndex];
+    // Start with a random note - safe because we checked length > 0
+    const startIndex = Math.floor(Math.random() * notePool.length);
+    let currentNote = notePool[startIndex];
+
+    // Safety check (shouldn't happen but defensive)
+    if (!currentNote) return;
 
     for (let i = 0; i < settings.noteCount; i++) {
       // Add sequence number to note
@@ -107,13 +118,18 @@ export default function MelodyPage() {
         if (descending.length > 0) candidates = descending;
       }
 
-      // Pick random from candidates
+      // Pick random from candidates with proper bounds checking
       if (candidates.length > 0) {
-        currentNote = candidates[Math.floor(Math.random() * candidates.length)];
-      } else {
-        // Fallback to any note
-        currentNote = notePool[Math.floor(Math.random() * notePool.length)];
+        const nextIndex = Math.floor(Math.random() * candidates.length);
+        const nextNote = candidates[nextIndex];
+        if (nextNote) currentNote = nextNote;
+      } else if (notePool.length > 0) {
+        // Fallback to any note from pool
+        const fallbackIndex = Math.floor(Math.random() * notePool.length);
+        const fallbackNote = notePool[fallbackIndex];
+        if (fallbackNote) currentNote = fallbackNote;
       }
+      // If both fail, currentNote stays the same (repeat note)
     }
 
     setMelodyNotes(melody);
@@ -295,6 +311,12 @@ export default function MelodyPage() {
                 </Button>
               )}
             </div>
+
+            {noNotesWarning && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                No notes available in this position. Try unlocking position or choosing a different fret range.
+              </div>
+            )}
           </CardContent>
         </Card>
 
